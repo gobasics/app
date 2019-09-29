@@ -58,10 +58,6 @@ func (s *Server) parseHosts() error {
 }
 
 func (s *Server) initLetsencrypt() error {
-	if !s.Config.Letsencrypt {
-		return nil
-	}
-
 	if err := s.parseDirCache(); err != nil {
 		return err
 	}
@@ -114,8 +110,14 @@ func (s *Server) Done() chan os.Signal {
 }
 
 func (s *Server) ListenAndServe() error {
+	type F []func() error
+	var fns = F{s.listen, s.serve}
+	if s.Config.Letsencrypt {
+		fns = append(F{s.initLetsencrypt}, fns...)
+	}
+
 	var err error
-	for _, fn := range []func() error{s.initLetsencrypt, s.listen, s.serve} {
+	for _, fn := range fns {
 		if err = fn(); err != nil {
 			return err
 		}
