@@ -23,11 +23,11 @@ type Provider interface {
 }
 
 type Server struct {
-	Config Config
+	Config   Config
+	Provider Provider
 
 	listener  net.Listener
 	log       Logger
-	backend   Provider
 	stop      chan os.Signal
 	tlsConfig *tls.Config
 }
@@ -101,13 +101,13 @@ func (s *Server) listen() error {
 }
 
 func (s *Server) serve() error {
-	return s.backend.Serve(s.listener)
+	return s.Provider.Serve(s.listener)
 }
 
 func (s *Server) Done() chan os.Signal {
 	go func() {
 		s.log.Infof("received %+v, shutting down", <-s.stop)
-		s.backend.GracefulStop()
+		s.Provider.GracefulStop()
 	}()
 
 	return s.stop
