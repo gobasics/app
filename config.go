@@ -1,4 +1,4 @@
-package server
+package app
 
 type Config struct {
 	Letsencrypt bool
