@@ -27,7 +27,7 @@ type Server struct {
 	Provider Provider
 
 	listener  net.Listener
-	log       Logger
+	Log       Logger
 	stop      chan os.Signal
 	tlsConfig *tls.Config
 }
@@ -91,7 +91,7 @@ func (s *Server) listen() error {
 		return fmt.Errorf("could not listen on %s; %w", hostPort, err)
 	}
 
-	s.log.Infof("listening on %s", hostPort)
+	s.Log.Infof("listening on %s", hostPort)
 
 	return nil
 }
@@ -102,7 +102,7 @@ func (s *Server) serve() error {
 
 func (s *Server) Done() chan os.Signal {
 	go func() {
-		s.log.Infof("received %+v, shutting down", <-s.stop)
+		s.Log.Infof("received %+v, shutting down", <-s.stop)
 		s.Provider.GracefulStop()
 	}()
 
