@@ -13,10 +13,6 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-type Logger interface {
-	Infof(string, ...interface{})
-}
-
 type Provider interface {
 	GracefulStop()
 	Serve(net.Listener) error
@@ -27,7 +23,6 @@ type Server struct {
 	Provider Provider
 
 	listener  net.Listener
-	Log       Logger
 	stop      chan os.Signal
 	tlsConfig *tls.Config
 }
@@ -91,8 +86,6 @@ func (s *Server) listen() error {
 		return fmt.Errorf("could not listen on %s; %w", hostPort, err)
 	}
 
-	s.Log.Infof("listening on %s", hostPort)
-
 	return nil
 }
 
@@ -102,7 +95,6 @@ func (s *Server) serve() error {
 
 func (s *Server) Done() chan os.Signal {
 	go func() {
-		s.Log.Infof("received %+v, shutting down", <-s.stop)
 		s.Provider.GracefulStop()
 	}()
 
@@ -110,18 +102,15 @@ func (s *Server) Done() chan os.Signal {
 }
 
 func (s *Server) ListenAndServe() error {
-	type F []func() error
-	var fns = F{s.listen, s.serve}
 	if s.Config.Letsencrypt {
-		fns = append(F{s.initLetsencrypt}, fns...)
-	}
-
-	var err error
-	for _, fn := range fns {
-		if err = fn(); err != nil {
+		if err := s.initLetsencrypt(); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	if err := s.listen(); err != nil {
+		return err
+	}
+
+	return s.serve()
 }
