@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 type Backend interface {
@@ -16,16 +18,17 @@ type TLSProvider interface {
 	TLSConfig() (*tls.Config, error)
 }
 
-type Server struct {
+type server struct {
 	hostIP   string
 	listener net.Listener
 	port     int
 
 	backend     Backend
+	stopChan    chan os.Signal
 	tlsProvider TLSProvider
 }
 
-func (s *Server) listen() error {
+func (s *server) listen() error {
 	var err error
 	hostPort := fmt.Sprintf("%s:%d", s.hostIP, s.port)
 
@@ -48,35 +51,34 @@ func (s *Server) listen() error {
 	return nil
 }
 
-func (s *Server) serve() error {
-	return s.backend.Serve(s.listener)
-}
-
-func (s *Server) Done() chan os.Signal {
-	stop := make(chan os.Signal)
+func (s *server) serve() error {
+	errChan := make(chan error)
 
 	go func() {
-		<-stop
-		s.backend.GracefulStop()
+		errChan <- s.backend.Serve(s.listener)
 	}()
 
-	return stop
-}
-
-func (s *Server) ListenAndServe() error {
-	if err := s.listen(); err != nil {
+	select {
+	case err := <-errChan:
 		return err
+	case <-s.stopChan:
+		s.backend.GracefulStop()
+		return nil
 	}
-
-	return s.serve()
 }
 
-func New(options ...Option) *Server {
-	s := Server{}
+func Run(options ...Option) error {
+	s := server{stopChan: make(chan os.Signal)}
+
+	signal.Notify(s.stopChan, syscall.SIGINT, syscall.SIGTERM)
 
 	for _, f := range options {
 		f(&s)
 	}
 
-	return &s
+	if err := s.listen(); err != nil {
+		return err
+	}
+
+	return s.serve()
 }
