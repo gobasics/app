@@ -53,7 +53,7 @@ func (s *Server) serve() error {
 }
 
 func (s *Server) Done() chan os.Signal {
-	stop := make(chan os.Signal, 1)
+	stop := make(chan os.Signal)
 
 	go func() {
 		<-stop
