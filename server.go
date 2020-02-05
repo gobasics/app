@@ -28,13 +28,16 @@ type Server struct {
 func (s *Server) listen() error {
 	var err error
 	hostPort := fmt.Sprintf("%s:%d", s.hostIP, s.port)
+
 	if s.tlsProvider == nil {
 		s.listener, err = net.Listen("tcp", hostPort)
 	} else {
 		var tlsConfig *tls.Config
+
 		if tlsConfig, err = s.tlsProvider.TLSConfig(); err != nil {
 			return err
 		}
+
 		s.listener, err = tls.Listen("tcp", hostPort, tlsConfig)
 	}
 
@@ -51,7 +54,9 @@ func (s *Server) serve() error {
 
 func (s *Server) Done() chan os.Signal {
 	stop := make(chan os.Signal, 1)
+
 	go func() {
+		<-stop
 		s.backend.GracefulStop()
 	}()
 
@@ -68,8 +73,10 @@ func (s *Server) ListenAndServe() error {
 
 func New(options ...Option) *Server {
 	s := Server{}
+
 	for _, f := range options {
 		f(&s)
 	}
+
 	return &s
 }
