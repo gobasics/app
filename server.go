@@ -77,7 +77,7 @@ func (a *App) Start() error {
 }
 
 func New(options ...Option) *App {
-	a := App{stopChan: make(chan os.Signal)}
+	a := App{stopChan: make(chan os.Signal, 1)}
 
 	for _, f := range options {
 		f(&a)
