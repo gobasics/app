@@ -67,11 +67,11 @@ func (a *App) serve() error {
 }
 
 func (a *App) Start() error {
-	signal.Notify(a.stopChan, os.Interrupt, os.Kill)
-
 	if err := a.listen(); err != nil {
 		return err
 	}
+
+	signal.Notify(a.stopChan, os.Interrupt, os.Kill)
 
 	return a.serve()
 }
