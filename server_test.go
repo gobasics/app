@@ -41,7 +41,8 @@ func TestGracefulStop(t *testing.T) {
 			stopChan := make(chan os.Signal)
 			want := test.stopCount
 			go func() {
-				_ = Run(WithServer(test.backend), WithStopChan(stopChan), WithHost("0.0.0.0"), WithPort(0))
+				a := New(WithServer(test.backend), WithStopChan(stopChan), WithHost("0.0.0.0"), WithPort(0))
+				_ = a.Start()
 			}()
 			stopChan <- test.signal
 			got := test.backend.stopCount
@@ -61,7 +62,8 @@ func TestServeError(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("%+v", test), func(t *testing.T) {
 			want := test.backend.serveErr
-			got := Run(WithServer(test.backend))
+			a := New(WithServer(test.backend))
+			got := a.Start()
 			if got != want {
 				t.Errorf("wanted %v, got %v", want, got)
 			}

@@ -17,7 +17,7 @@ type TLSProvider interface {
 	TLSConfig() (*tls.Config, error)
 }
 
-type server struct {
+type App struct {
 	hostIP   string
 	listener net.Listener
 	port     int
@@ -27,20 +27,20 @@ type server struct {
 	tlsProvider TLSProvider
 }
 
-func (s *server) listen() error {
+func (a *App) listen() error {
 	var err error
-	hostPort := fmt.Sprintf("%s:%d", s.hostIP, s.port)
+	hostPort := fmt.Sprintf("%s:%d", a.hostIP, a.port)
 
-	if s.tlsProvider == nil {
-		s.listener, err = net.Listen("tcp", hostPort)
+	if a.tlsProvider == nil {
+		a.listener, err = net.Listen("tcp", hostPort)
 	} else {
 		var tlsConfig *tls.Config
 
-		if tlsConfig, err = s.tlsProvider.TLSConfig(); err != nil {
+		if tlsConfig, err = a.tlsProvider.TLSConfig(); err != nil {
 			return err
 		}
 
-		s.listener, err = tls.Listen("tcp", hostPort, tlsConfig)
+		a.listener, err = tls.Listen("tcp", hostPort, tlsConfig)
 	}
 
 	if err != nil {
@@ -50,34 +50,38 @@ func (s *server) listen() error {
 	return nil
 }
 
-func (s *server) serve() error {
+func (a *App) serve() error {
 	errChan := make(chan error)
 
 	go func() {
-		errChan <- s.backend.Serve(s.listener)
+		errChan <- a.backend.Serve(a.listener)
 	}()
 
 	select {
 	case err := <-errChan:
 		return err
-	case _ = <-s.stopChan:
-		s.backend.GracefulStop()
+	case _ = <-a.stopChan:
+		a.backend.GracefulStop()
 		return nil
 	}
 }
 
-func Run(options ...Option) error {
-	s := server{stopChan: make(chan os.Signal)}
+func (a *App) Start() error {
+	signal.Notify(a.stopChan, os.Interrupt, os.Kill)
 
-	for _, f := range options {
-		f(&s)
-	}
-
-	signal.Notify(s.stopChan, os.Interrupt, os.Kill)
-
-	if err := s.listen(); err != nil {
+	if err := a.listen(); err != nil {
 		return err
 	}
 
-	return s.serve()
+	return a.serve()
+}
+
+func New(options ...Option) *App {
+	a := App{stopChan: make(chan os.Signal)}
+
+	for _, f := range options {
+		f(&a)
+	}
+
+	return &a
 }
