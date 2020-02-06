@@ -10,13 +10,13 @@ func WithAutoCert() Option {
 	}
 }
 
-func WithBackend(b Backend) Option {
+func WithServer(b Server) Option {
 	return func(s *server) {
 		s.backend = b
 	}
 }
 
-func WithHostIP(ip string) Option {
+func WithHost(ip string) Option {
 	return func(s *server) {
 		s.hostIP = ip
 	}

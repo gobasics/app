@@ -8,7 +8,7 @@ import (
 	"os/signal"
 )
 
-type Backend interface {
+type Server interface {
 	GracefulStop()
 	Serve(net.Listener) error
 }
@@ -22,7 +22,7 @@ type server struct {
 	listener net.Listener
 	port     int
 
-	backend     Backend
+	backend     Server
 	stopChan    chan os.Signal
 	tlsProvider TLSProvider
 }
