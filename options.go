@@ -1,5 +1,7 @@
 package app
 
+import "os"
+
 type Option func(*server)
 
 func WithAutoCert() Option {
@@ -22,5 +24,11 @@ func WithHostIP(ip string) Option {
 func WithPort(port int) Option {
 	return func(s *server) {
 		s.port = port
+	}
+}
+
+func WithStopChan(stopChan chan os.Signal) Option {
+	return func(s *server) {
+		s.stopChan = stopChan
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"syscall"
 )
 
 type Backend interface {
@@ -61,7 +60,7 @@ func (s *server) serve() error {
 	select {
 	case err := <-errChan:
 		return err
-	case <-s.stopChan:
+	case _ = <-s.stopChan:
 		s.backend.GracefulStop()
 		return nil
 	}
@@ -70,11 +69,11 @@ func (s *server) serve() error {
 func Run(options ...Option) error {
 	s := server{stopChan: make(chan os.Signal)}
 
-	signal.Notify(s.stopChan, syscall.SIGINT, syscall.SIGTERM)
-
 	for _, f := range options {
 		f(&s)
 	}
+
+	signal.Notify(s.stopChan, os.Interrupt, os.Kill)
 
 	if err := s.listen(); err != nil {
 		return err
