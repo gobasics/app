@@ -51,27 +51,20 @@ func (a *App) listen() error {
 }
 
 func (a *App) serve() error {
-	errChan := make(chan error)
+	signal.Notify(a.stopChan, os.Interrupt, os.Kill)
 
 	go func() {
-		errChan <- a.backend.Serve(a.listener)
+		<-a.stopChan
+		a.backend.GracefulStop()
 	}()
 
-	select {
-	case err := <-errChan:
-		return err
-	case _ = <-a.stopChan:
-		a.backend.GracefulStop()
-		return nil
-	}
+	return a.backend.Serve(a.listener)
 }
 
 func (a *App) Start() error {
 	if err := a.listen(); err != nil {
 		return err
 	}
-
-	signal.Notify(a.stopChan, os.Interrupt, os.Kill)
 
 	return a.serve()
 }
