@@ -1,4 +1,4 @@
-package app
+package server
 
 import (
 	"crypto/tls"
@@ -8,7 +8,7 @@ import (
 	"os/signal"
 )
 
-type Server interface {
+type Provider interface {
 	GracefulStop()
 	Serve(net.Listener) error
 }
@@ -17,30 +17,30 @@ type TLSProvider interface {
 	TLSConfig() (*tls.Config, error)
 }
 
-type App struct {
+type Server struct {
 	hostIP   string
 	listener net.Listener
 	port     int
 
-	backend     Server
+	provider    Provider
 	stopChan    chan os.Signal
 	tlsProvider TLSProvider
 }
 
-func (a *App) listen() error {
+func (s *Server) listen() error {
 	var err error
-	hostPort := fmt.Sprintf("%s:%d", a.hostIP, a.port)
+	hostPort := fmt.Sprintf("%s:%d", s.hostIP, s.port)
 
-	if a.tlsProvider == nil {
-		a.listener, err = net.Listen("tcp", hostPort)
+	if s.tlsProvider == nil {
+		s.listener, err = net.Listen("tcp", hostPort)
 	} else {
 		var tlsConfig *tls.Config
 
-		if tlsConfig, err = a.tlsProvider.TLSConfig(); err != nil {
+		if tlsConfig, err = s.tlsProvider.TLSConfig(); err != nil {
 			return err
 		}
 
-		a.listener, err = tls.Listen("tcp", hostPort, tlsConfig)
+		s.listener, err = tls.Listen("tcp", hostPort, tlsConfig)
 	}
 
 	if err != nil {
@@ -50,31 +50,31 @@ func (a *App) listen() error {
 	return nil
 }
 
-func (a *App) serve() error {
-	signal.Notify(a.stopChan, os.Interrupt, os.Kill)
+func (s *Server) serve() error {
+	signal.Notify(s.stopChan, os.Interrupt, os.Kill)
 
 	go func() {
-		<-a.stopChan
-		a.backend.GracefulStop()
+		<-s.stopChan
+		s.provider.GracefulStop()
 	}()
 
-	return a.backend.Serve(a.listener)
+	return s.provider.Serve(s.listener)
 }
 
-func (a *App) Start() error {
-	if err := a.listen(); err != nil {
+func (s *Server) Start() error {
+	if err := s.listen(); err != nil {
 		return err
 	}
 
-	return a.serve()
+	return s.serve()
 }
 
-func New(options ...Option) *App {
-	a := App{stopChan: make(chan os.Signal, 1)}
+func New(options ...Option) *Server {
+	s := Server{stopChan: make(chan os.Signal, 1)}
 
 	for _, f := range options {
-		f(&a)
+		f(&s)
 	}
 
-	return &a
+	return &s
 }

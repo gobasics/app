@@ -1,34 +1,34 @@
-package app
+package server
 
 import "os"
 
-type Option func(*App)
+type Option func(*Server)
 
 func WithAutoCert() Option {
-	return func(a *App) {
-		a.tlsProvider = &autoCert{}
+	return func(s *Server) {
+		s.tlsProvider = &autoCert{}
 	}
 }
 
-func WithServer(b Server) Option {
-	return func(a *App) {
-		a.backend = b
+func WithServer(b Provider) Option {
+	return func(s *Server) {
+		s.provider = b
 	}
 }
 
 func WithHost(ip string) Option {
-	return func(a *App) {
-		a.hostIP = ip
+	return func(s *Server) {
+		s.hostIP = ip
 	}
 }
 func WithPort(port int) Option {
-	return func(a *App) {
-		a.port = port
+	return func(s *Server) {
+		s.port = port
 	}
 }
 
 func WithStopChan(stopChan chan os.Signal) Option {
-	return func(a *App) {
-		a.stopChan = stopChan
+	return func(s *Server) {
+		s.stopChan = stopChan
 	}
 }
