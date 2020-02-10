@@ -1,3 +1,3 @@
 # App
 
-A minimal golang application boilerplate.
+A minimal golang server application boilerplate.
