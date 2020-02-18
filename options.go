@@ -4,9 +4,12 @@ import "os"
 
 type Option func(*Server)
 
-func WithAutoCert() Option {
+func WithAutoCert(dirCache string, hostnames ...string) Option {
 	return func(s *Server) {
-		s.tlsProvider = &autoCert{}
+		s.tlsProvider = &autoCert{
+			DirCache:  dirCache,
+			HostNames: hostnames,
+		}
 	}
 }
 
