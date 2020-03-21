@@ -71,15 +71,11 @@ func (s *Server) Start() error {
 	return s.serve()
 }
 
-func DefaultOptions() ([]Option, error) {
-	port, err := env.Get("PORT").Int()
-	if err != nil {
-		return nil, err
-	}
-
-	dirCache := env.Get("DIR_CACHE").String()
-	hostnames := env.Get("HOSTNAMES").StringSlice(",")
-	return []Option{WithPort(port), WithAutoCert(dirCache, hostnames...)}, nil
+func DefaultOptions() []Option {
+	port, _ := env.Get("PORT").Int()
+	dirCache := env.Get("DIR_CACHE").Str()
+	hostnames := env.Get("HOSTNAMES").StrSlice(",")
+	return []Option{WithPort(port), WithAutoCert(dirCache, hostnames...)}
 }
 
 func New(options ...Option) *Server {
