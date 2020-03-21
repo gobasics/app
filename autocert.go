@@ -12,8 +12,8 @@ import (
 )
 
 type autoCert struct {
-	DirCache  string
-	HostNames []string
+	DirCache      string
+	HostWhitelist []string
 }
 
 func (ac autoCert) parseDirCache() error {
@@ -30,7 +30,7 @@ func (ac autoCert) parseDirCache() error {
 }
 
 func (ac autoCert) parseHosts() error {
-	if len(ac.HostNames) == 0 {
+	if len(ac.HostWhitelist) == 0 {
 		return errors.New("hosts whitelist is not set")
 	}
 
@@ -55,7 +55,7 @@ func (ac *autoCert) TLSConfig() (*tls.Config, error) {
 	}
 	m := &autocert.Manager{
 		Cache:      autocert.DirCache(ac.DirCache),
-		HostPolicy: autocert.HostWhitelist(ac.HostNames...),
+		HostPolicy: autocert.HostWhitelist(ac.HostWhitelist...),
 		Prompt:     autocert.AcceptTOS,
 	}
 

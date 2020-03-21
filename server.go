@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+
+	"gobasics.dev/env"
 )
 
 type Provider interface {
@@ -69,11 +71,22 @@ func (s *Server) Start() error {
 	return s.serve()
 }
 
+func DefaultOptions() ([]Option, error) {
+	port, err := env.Get("PORT").Int()
+	if err != nil {
+		return nil, err
+	}
+
+	dirCache := env.Get("DIR_CACHE").String()
+	hostnames := env.Get("HOSTNAMES").StringSlice(",")
+	return []Option{WithPort(port), WithAutoCert(dirCache, hostnames...)}, nil
+}
+
 func New(options ...Option) *Server {
 	s := Server{stopChan: make(chan os.Signal, 1)}
 
-	for _, f := range options {
-		f(&s)
+	for _, o := range options {
+		o(&s)
 	}
 
 	return &s
