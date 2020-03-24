@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 
 	"gobasics.dev/env"
 )
@@ -71,15 +72,34 @@ func (s *Server) Start() error {
 	return s.serve()
 }
 
-func DefaultOptions() []Option {
-	port, _ := env.Get("PORT").Int()
-	dirCache := env.Get("DIR_CACHE").Str()
-	hostnames := env.Get("HOSTNAMES").StrSlice(",")
-	return []Option{WithPort(port), WithAutoCert(dirCache, hostnames...)}
+func split(v string) []string {
+	s := strings.Split(v, ",")
+	for i := range s {
+		s[i] = strings.TrimSpace(s[i])
+	}
+	return s
 }
 
 func New(options ...Option) *Server {
 	s := Server{stopChan: make(chan os.Signal, 1)}
+
+	var port int
+	var dirCache, hostnames string
+	var defaults []Option
+
+	if env.Int(&port, "PORT") == nil {
+		defaults = append(defaults, WithPort(port))
+	}
+
+	if env.Str(&dirCache, "DIR_CACHE") == nil {
+		if env.Str(&hostnames, "HOSTNAMES") == nil {
+			defaults = append(defaults, WithAutoCert(dirCache, split(hostnames)...))
+		}
+	}
+
+	for _, o := range defaults {
+		o(&s)
+	}
 
 	for _, o := range options {
 		o(&s)
